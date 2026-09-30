@@ -1,0 +1,10 @@
+'use strict';
+const express=require('express'),cors=require('cors'),path=require('path'),Database=require('better-sqlite3');
+const app=express(),PORT=process.env.PORT||3000,ROOT=path.resolve(__dirname,'..');
+const db=new Database(path.join(__dirname,'portfolio.db'));
+app.use(cors());app.use(express.json({limit:'5mb'}));app.use(express.static(ROOT));
+db.exec("CREATE TABLE IF NOT EXISTS requests(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,company TEXT,email TEXT NOT NULL,phone TEXT,service TEXT,budget TEXT,details TEXT,status TEXT NOT NULL DEFAULT 'جديد',created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);");
+app.get('/api/health',(q,s)=>s.json({ok:true}));
+app.get('/api/requests',(q,s)=>s.json(db.prepare('SELECT * FROM requests ORDER BY id DESC').all()));
+app.post('/api/requests',(q,s)=>{const x=q.body||{};if(!x.name||!x.email)return s.status(400).json({ok:false,error:'name and email are required'});const r=db.prepare('INSERT INTO requests(name,company,email,phone,service,budget,details) VALUES(?,?,?,?,?,?,?)').run(x.name,x.company||'',x.email,x.phone||'',x.service||'',x.budget||'',x.details||'');s.json({ok:true,id:r.lastInsertRowid})});
+app.listen(PORT,()=>console.log('Portfolio backend running on '+PORT));
